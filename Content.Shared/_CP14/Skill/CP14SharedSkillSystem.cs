@@ -3,6 +3,7 @@ using System.Text;
 using Content.Shared._CP14.Skill.Components;
 using Content.Shared._CP14.Skill.Prototypes;
 using Content.Shared.FixedPoint;
+using Content.Shared.Popups;
 using Robust.Shared.Prototypes;
 
 namespace Content.Shared._CP14.Skill;
@@ -174,6 +175,10 @@ public abstract partial class CP14SharedSkillSystem : EntitySystem
         if (HaveSkill(target, skill, component))
             return false;
 
+        //Check if the skill is in the available skill trees
+        if (!component.AvailableSkillTrees.Contains(skill.Tree))
+            return false;
+
         //Check max cap
         if (component.SkillsSumExperience + skill.LearnCost > component.ExperienceMaxCap)
             return false;
@@ -263,6 +268,20 @@ public abstract partial class CP14SharedSkillSystem : EntitySystem
             TryRemoveSkill(target, component.LearnedSkills[i], component);
         }
         return true;
+    }
+
+    /// <summary>
+    /// Increases the number of memory points for a character, limited to a certain amount.
+    /// </summary>
+    public void AddMemoryPoints(EntityUid target, FixedPoint2 points, FixedPoint2 limit, CP14SkillStorageComponent? component = null)
+    {
+        if (!Resolve(target, ref component, false))
+            return;
+
+        component.ExperienceMaxCap = FixedPoint2.Min(component.ExperienceMaxCap + points, limit);
+        Dirty(target, component);
+
+        _popup.PopupEntity(Loc.GetString("cp14-skill-popup-added-points", ("count", points)), target, target);
     }
 }
 
